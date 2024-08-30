@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("ATUuDhjiqaMYUMoky8ozqx3pDpZM1TDncnvd3tfRqAa2");
+declare_id!("5RmuPkbC8RZbYp3CF4FbV4xKT88MPjrDsngu2j7ZtVvR");
 
 #[program]
 pub mod crowdfunding {
@@ -18,21 +18,33 @@ pub mod crowdfunding {
         
     }
 
-    pub fn withdraw(ctx:Context<Withdraw>,amount:u64) -> ProgramResult {
+    pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> ProgramResult {
         let campaign = &mut ctx.accounts.campaign;
         let user = &ctx.accounts.user;
+    
+        // Check if the user is the admin of the campaign
         if campaign.admin != *user.key {
             return Err(ProgramError::IncorrectProgramId);
         }
-        let rent_balance= Rent::get()?.minimum_balance(campaign.to_account_info().data_len());
-
+    
+        // Calculate the minimum balance required to keep the account rent-exempt
+        let rent_balance = Rent::get()?.minimum_balance(campaign.to_account_info().data_len());
+    
+        // Ensure there are enough lamports in the campaign account to withdraw the desired amount
         if **campaign.to_account_info().lamports.borrow() - rent_balance < amount {
             return Err(ProgramError::InsufficientFunds);
         }
+    
+        // Perform the withdrawal by transferring lamports from the campaign to the user
         **campaign.to_account_info().try_borrow_mut_lamports()? -= amount;
-        **user.to_account_info().try_borrow_mut_lamports()?  += amount;
+        **user.to_account_info().try_borrow_mut_lamports()? += amount;
+    
+        // Update the campaign's donated amount to reflect the withdrawal
+        campaign.amount_donated = campaign.amount_donated.saturating_sub(amount);
+    
         Ok(())
     }
+    
 
     pub fn donate(ctx:Context<Donate>,amount:u64) -> ProgramResult {
         let ix = anchor_lang::solana_program::system_instruction::transfer(
@@ -52,7 +64,7 @@ pub mod crowdfunding {
 
 #[derive(Accounts)]
 pub struct Create<'info> {
-    #[account(init, payer = user, space = 8 + 8 + 8 + 32 + 32,seeds =[ b"CAMPAIGN_DEMO".as_ref(),user.key().as_ref()],bump)]
+    #[account(init, payer = user, space = 10000,seeds =[ b"CAMPAIGN_DEMO".as_ref(),user.key().as_ref()],bump)]
     pub campaign: Account<'info, Campaign>,
     #[account(mut)]
     pub user: Signer<'info>,

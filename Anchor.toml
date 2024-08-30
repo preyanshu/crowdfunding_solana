@@ -5,13 +5,13 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-crowdfunding = "ATUuDhjiqaMYUMoky8ozqx3pDpZM1TDncnvd3tfRqAa2"
+crowdfunding = "5RmuPkbC8RZbYp3CF4FbV4xKT88MPjrDsngu2j7ZtVvR"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "devnet"
+cluster = "Devnet"
 wallet = "./id.json"
 
 [scripts]
